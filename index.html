@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
+    <style>
+        body {
+            display: flex;
+        }
+
+        .menu, .cart {
+            flex-basis: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <h1>Menu</h1>
+    </div>
+    <div class="cart">
+        <div><h1>Cart</h1> <h2>Total: <span></span></h2></div>
+    </div>
+    <script>
+        const items = [
+        {id: 1, name: "Big Mac", price: 45, description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam"},
+        {id: 2, name: "Big Tasty", price: 65, description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam"},
+        {id: 3, name: "McRoyale", price: 70, description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam"},
+        {id: 4, name: "Cheesburger", price: 30, description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam"},
+        {id: 5, name: "Beefburger", price: 25, description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam"},
+        ];
+
+        const cart = [];
+
+        const loadMenu = () => {
+            items.forEach(item => {
+            let newItem = $(`<div class="menu-item" id="${item.id}">`)
+                .append(`<h2>${item.name}</h2>`)
+                .append(`<h3>${item.price}</h3>`)
+                .append(`<p>${item.description}</p>`)
+                .append(`<button class="add">Add to Cart</button>`)
+                .append('</div>');
+            $('.menu').append(newItem);
+            });
+        }
+
+        const calcTotal = () => {
+            if(cart.length) {
+            let total = 0;
+            cart.forEach(cartItem => {
+                total += cartItem.price * cartItem.quantity;
+            });
+            $('.cart div h2 span').html(total);
+            } else {
+                $('.cart div h2 span').html(0);
+            }   
+        }
+
+        const addToCart = (object) => {
+            let itemID = object.attr('id');
+            if(cart.find((item) => item.id == itemID)) {
+                let itemIndex = cart.findIndex((item) => item.id == itemID);
+                cart[itemIndex].quantity += 1;
+                let cartObject = $(`[cart-id=${itemID}]`);
+                cartObject.find('span').html(cart[itemIndex].quantity);
+            } else {
+                let cartItem = items.find((item) => item.id == itemID);
+                cartItem.quantity = 1;
+                cart.push(cartItem);
+                let cartObject = object.clone();
+                cartObject.find('.add').remove();
+                cartObject.attr('cart-id', cartObject.attr('id'));
+                cartObject.removeClass();
+                cartObject.addClass('cart-item');
+                cartObject.removeAttr('id');
+                cartObject.append(`<button class="plus">+</button>`)
+                .append(`<span>${cartItem.quantity}</span>`)
+                .append(`<button class="minus">-</button>`)
+                .append(`<button class="remove">Remove</button>`);
+                cartObject.appendTo('.cart');
+                cartObject.draggable({helper: "clone", revert: "invalid"});
+            }
+            calcTotal();
+        }
+
+        const removeFromCart = (object) => {
+            let itemID = object.attr('cart-id');
+            let itemIndex = cart.findIndex((item) => item.id == itemID);
+            cart.splice(itemIndex, 1);
+            object.remove();
+            calcTotal();
+        }
+
+        loadMenu();
+        calcTotal();
+
+        $('body').on('click', '.menu .menu-item .add', function() {
+            addToCart($(this).parent());
+        });
+
+        $('body').on('click', '.cart .cart-item .plus', function() {
+            let itemID = $(this).parent().attr('cart-id');
+            let itemIndex = cart.findIndex((item) => item.id == itemID);
+            cart[itemIndex].quantity += 1;
+            $(this).parent().find('span').html(cart[itemIndex].quantity);
+            calcTotal();
+        });
+
+        $('body').on('click', '.cart .cart-item .minus', function() {
+            let itemID = $(this).parent().attr('cart-id');
+            let itemIndex = cart.findIndex((item) => item.id == itemID);
+            if(cart[itemIndex].quantity >= 2) {
+                cart[itemIndex].quantity -= 1;
+                $(this).parent().find('span').html(cart[itemIndex].quantity);
+            } else {
+                removeFromCart($(this).parent());
+            }
+            calcTotal();
+        });
+
+        $('body').on('click', '.cart .cart-item .remove', function() {
+            removeFromCart($(this).parent());
+        });
+
+
+        $(".menu-item").draggable({helper: "clone", revert: "invalid"});
+
+
+        $(".cart").droppable({
+            accept: '.menu-item',
+            drop: function(event, ui) {
+                addToCart($(ui.helper.prevObject[0]));
+            }
+        });
+
+        $(".menu").droppable({
+            accept: '.cart-item',
+            drop: function(event, ui) {
+                removeFromCart($(ui.helper.prevObject[0]));
+            }
+        });
+
+    </script>
+</body>
+</html>
